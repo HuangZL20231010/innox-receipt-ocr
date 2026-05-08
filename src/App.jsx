@@ -110,14 +110,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-5 py-4">
-          <h1 className="text-xl font-semibold text-gray-800">
-            <span className="mr-2">📋</span>
-            Innox 发票整理小助手
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            上传发票和购买截图，一键生成《深圳科创学院采购验收单（团队自采）》
-          </p>
+        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center gap-3">
+          <img src="/logo.png" alt="logo" className="w-11 h-11 object-contain rounded shrink-0" />
+          <div>
+            <h1 className="text-xl font-semibold text-gray-800">Innox 发票整理小助手</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              上传发票和购买截图，一键生成《深圳科创学院采购验收单（团队自采）》
+            </p>
+          </div>
         </div>
       </header>
 

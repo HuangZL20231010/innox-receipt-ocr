@@ -3,7 +3,7 @@ import { WECHAT_ID } from '../config.js'
 
 export default function SettingsPanel({ settings, onChange }) {
   const [open, setOpen] = useState(!settings.apiKey)
-  const [copied, setCopied] = useState(false)
+  const [showWechatModal, setShowWechatModal] = useState(false)
 
   function update(field) {
     return (e) => onChange({ ...settings, [field]: e.target.value })
@@ -12,8 +12,7 @@ export default function SettingsPanel({ settings, onChange }) {
   async function copyWechat() {
     try {
       await navigator.clipboard.writeText(WECHAT_ID)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setShowWechatModal(true)
     } catch {
       window.prompt('请手动复制微信号：', WECHAT_ID)
     }
@@ -65,7 +64,7 @@ export default function SettingsPanel({ settings, onChange }) {
                 className="text-primary-600 hover:underline"
                 title={`微信号 ${WECHAT_ID}`}
               >
-                {copied ? '✓ 已复制微信号' : '向开发者申请体验（点击复制微信）'}
+                向开发者申请体验（点击复制微信）
               </button>
             </div>
           </label>
@@ -90,6 +89,33 @@ export default function SettingsPanel({ settings, onChange }) {
               className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </label>
+        </div>
+      )}
+
+      {showWechatModal && (
+        <div
+          onClick={() => setShowWechatModal(false)}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 text-center animate-popIn"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="w-9 h-9 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">已复制微信号到剪贴板</h3>
+            <p className="text-sm text-gray-500 mb-1">快去添加吧！</p>
+            <p className="text-xs text-gray-400 mb-5 font-mono select-all">微信号：{WECHAT_ID}</p>
+            <button
+              onClick={() => setShowWechatModal(false)}
+              className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              知道了
+            </button>
+          </div>
         </div>
       )}
     </section>
