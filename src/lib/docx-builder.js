@@ -15,6 +15,7 @@ import {
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { getImageDimensions } from './compress.js'
+import { log, fmtBytes } from './logger.js'
 
 const FONT = 'PingFang SC'
 
@@ -330,7 +331,21 @@ export async function buildDocx({ items, screenshots, settings }) {
 }
 
 export async function downloadDocx(payload) {
-  const blob = await buildDocx(payload)
-  const date = payload.settings.acceptanceDate?.replace(/-/g, '') || 'output'
-  saveAs(blob, `深圳科创学院采购验收单_${date}.docx`)
+  log.group('📝 生成 Word 文档')
+  log.info(`项目数: ${payload.items.length}，截图数: ${payload.screenshots.length}`)
+  log.info(`经办人: ${payload.settings.operatorName || '(未填)'}`)
+  log.info(`验收日期: ${payload.settings.acceptanceDate}`)
+  const t0 = performance.now()
+  try {
+    const blob = await buildDocx(payload)
+    const date = payload.settings.acceptanceDate?.replace(/-/g, '') || 'output'
+    const filename = `深圳科创学院采购验收单_${date}.docx`
+    saveAs(blob, filename)
+    log.ok(`生成成功: ${filename} (${fmtBytes(blob.size)})，耗时 ${(performance.now() - t0).toFixed(0)}ms`)
+  } catch (e) {
+    log.error('生成失败：', e.message)
+    throw e
+  } finally {
+    log.groupEnd()
+  }
 }

@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression'
+import { log, fmtBytes } from './logger.js'
 
 export async function compressImage(file) {
   const options = {
@@ -9,14 +10,21 @@ export async function compressImage(file) {
     initialQuality: 0.85,
   }
 
+  log.group(`🖼 压缩图片: ${file.name}`)
+  log.info(`原始: ${fmtBytes(file.size)} (${file.type})`)
+  const t0 = performance.now()
+
   let compressed
   try {
     compressed = await imageCompression(file, options)
+    log.ok(`压缩后: ${fmtBytes(compressed.size)}（节省 ${(((file.size - compressed.size) / file.size) * 100).toFixed(0)}%），耗时 ${(performance.now() - t0).toFixed(0)}ms`)
   } catch (e) {
+    log.warn('压缩失败，使用原图：', e.message)
     compressed = file
   }
 
   const dataUrl = await imageCompression.getDataUrlFromFile(compressed)
+  log.groupEnd()
   return { blob: compressed, dataUrl }
 }
 
