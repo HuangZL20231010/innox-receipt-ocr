@@ -84,6 +84,9 @@ export async function extractItems(text, apiKey) {
     qty: Number(it.qty) || 0,
     unitPrice: Number(it.unitPrice) || 0,
     subtotal: Number(it.subtotal) || 0,
+    currency: String(it.currency || 'CNY').toUpperCase(),
+    invoiceDate: String(it.invoiceDate || ''),
+    exchangeRate: 1,
     other: '',
   }))
 

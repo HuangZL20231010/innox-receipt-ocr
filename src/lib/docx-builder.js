@@ -16,6 +16,7 @@ import {
 import { saveAs } from 'file-saver'
 import { getImageDimensions } from './compress.js'
 import { log, fmtBytes } from './logger.js'
+import { formatMoney } from './currency.js'
 
 const FONT = 'PingFang SC'
 
@@ -84,8 +85,8 @@ function buildItemRow(item, index) {
     item.name || '',
     item.model || '',
     item.qty != null ? String(item.qty) : '',
-    item.unitPrice != null ? Number(item.unitPrice).toFixed(2) : '',
-    item.subtotal != null ? Number(item.subtotal).toFixed(2) : '',
+    item.unitPrice != null ? formatMoney(item.unitPrice, item.currency) : '',
+    item.subtotal != null ? formatMoney(item.subtotal, item.currency) : '',
     item.other || '',
   ]
   return new TableRow({
@@ -94,11 +95,11 @@ function buildItemRow(item, index) {
   })
 }
 
-function buildTotalRow(total) {
+function buildTotalRow(totalCNY) {
   return new TableRow({
     children: [
       textCell('金额合计', { width: FIRST_TWO, columnSpan: 2, size: 24 }),
-      textCell(`RMB ${total.toFixed(2)}`, { width: LAST_FIVE, columnSpan: 5, size: 24 }),
+      textCell(`RMB ${totalCNY.toFixed(2)}`, { width: LAST_FIVE, columnSpan: 5, size: 24 }),
     ],
   })
 }
@@ -279,12 +280,15 @@ function buildSignatureRow(labelLines, value) {
 }
 
 export async function buildDocx({ items, screenshots, settings }) {
-  const total = items.reduce((sum, it) => sum + (Number(it.subtotal) || 0), 0)
+  const totalCNY = items.reduce(
+    (sum, it) => sum + (Number(it.subtotal) || 0) * (Number(it.exchangeRate) || 1),
+    0
+  )
 
   const rows = [
     buildHeaderRow(),
     ...items.map((it, idx) => buildItemRow(it, idx)),
-    buildTotalRow(total),
+    buildTotalRow(totalCNY),
     await buildPhotoRow(screenshots),
     buildAcceptContentRow(),
     buildDateRow(settings.acceptanceDate),

@@ -8,6 +8,8 @@ import GenerateButton from './components/GenerateButton.jsx'
 import { parsePDF } from './lib/pdf.js'
 import { extractItems } from './lib/deepseek.js'
 import { compressImage } from './lib/compress.js'
+import { fetchRate } from './lib/exchange.js'
+import { formatRateText, isForeign } from './lib/currency.js'
 import { WECHAT_ID, GITHUB_URL } from './config.js'
 
 const today = () => new Date().toISOString().split('T')[0]
@@ -46,8 +48,67 @@ export default function App() {
       setItems((prev) => [...prev, ...newItems])
 
       updateStatus({ status: 'done', itemCount: newItems.length })
+
+      // 异步给外币条目拉汇率
+      newItems.forEach((item) => {
+        if (isForeign(item.currency)) {
+          autoFetchRate(item.id, item.currency, item.invoiceDate)
+        }
+      })
     } catch (e) {
       updateStatus({ status: 'error', error: e.message || String(e) })
+    }
+  }
+
+  async function autoFetchRate(itemId, currency, date) {
+    try {
+      const { rate, actualDate } = await fetchRate(currency, date)
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === itemId
+            ? {
+                ...it,
+                exchangeRate: rate,
+                invoiceDate: it.invoiceDate || actualDate,
+                other: formatRateText(currency, rate, actualDate),
+              }
+            : it
+        )
+      )
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === itemId
+            ? { ...it, other: `⚠ 汇率获取失败：${e.message}，请手动填写` }
+            : it
+        )
+      )
+    }
+  }
+
+  function handleCurrencyChange(itemId, newCurrency) {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== itemId) return it
+        if (newCurrency === 'CNY') {
+          return { ...it, currency: 'CNY', exchangeRate: 1, other: '' }
+        }
+        return { ...it, currency: newCurrency, exchangeRate: 1, other: '正在获取汇率…' }
+      })
+    )
+    if (newCurrency !== 'CNY') {
+      const item = items.find((x) => x.id === itemId)
+      autoFetchRate(itemId, newCurrency, item?.invoiceDate || '')
+    }
+  }
+
+  function handleInvoiceDateChange(itemId, newDate) {
+    const item = items.find((x) => x.id === itemId)
+    setItems((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, invoiceDate: newDate } : it))
+    )
+    if (item && isForeign(item.currency)) {
+      autoFetchRate(itemId, item.currency, newDate)
     }
   }
 
@@ -103,7 +164,18 @@ export default function App() {
   function addEmptyItem() {
     setItems((prev) => [
       ...prev,
-      { id: uid(), name: '', model: '', qty: 1, unitPrice: 0, subtotal: 0, other: '' },
+      {
+        id: uid(),
+        name: '',
+        model: '',
+        qty: 1,
+        unitPrice: 0,
+        subtotal: 0,
+        currency: 'CNY',
+        exchangeRate: 1,
+        invoiceDate: '',
+        other: '',
+      },
     ])
   }
 
@@ -139,6 +211,8 @@ export default function App() {
           onUpdate={updateItem}
           onDelete={deleteItem}
           onAdd={addEmptyItem}
+          onCurrencyChange={handleCurrencyChange}
+          onDateChange={handleInvoiceDateChange}
         />
         <GenerateButton items={items} screenshots={screenshots} settings={settings} />
       </main>
