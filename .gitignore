@@ -1,6 +1,10 @@
 node_modules
 dist
 dist-ssr
+*.log
+*.zip
+release/
+innox-receipt-ocr-sanitized/
 *.local
 .DS_Store
 .vscode/*
@@ -8,3 +12,4 @@ dist-ssr
 .idea
 .~*
 .claude/
+deploy.sh

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { downloadDocx } from '../lib/docx-builder.js'
+import { getUnsafeInvoiceItemIndex } from '../lib/receipt-validation.js'
 
 export default function GenerateButton({ items, screenshots, settings }) {
   const [loading, setLoading] = useState(false)
@@ -8,6 +9,18 @@ export default function GenerateButton({ items, screenshots, settings }) {
   function validate() {
     if (items.length === 0) return '至少需要一条采购明细'
     if (!settings.acceptanceDate) return '请填写验收日期'
+    const badAmountIndex = items.findIndex(
+      (it) =>
+        Number(it.invoiceTotal) > 0 &&
+        Math.abs(Number(it.subtotal) - Number(it.invoiceTotal)) > 0.01
+    )
+    if (badAmountIndex >= 0) {
+      return `第 ${badAmountIndex + 1} 行金额小计与发票最终金额不一致，请先核对`
+    }
+    const badValidationIndex = getUnsafeInvoiceItemIndex(items)
+    if (badValidationIndex >= 0) {
+      return `第 ${badValidationIndex + 1} 行未通过金额校验，查阅问题`
+    }
     return ''
   }
 

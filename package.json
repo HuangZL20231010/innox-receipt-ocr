@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "validate:amounts": "node scripts/validate-invoice-total.mjs",
+    "validate:case-invoices": "node scripts/validate-case-invoices.mjs",
+    "validate:token-invoices": "node scripts/validate-chinese-invoice-folder.mjs",
+    "validate:receipt-guard": "node scripts/validate-receipt-guard.mjs"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

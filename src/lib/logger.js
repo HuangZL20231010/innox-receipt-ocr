@@ -29,14 +29,9 @@ export function printBanner({ version, github, wechat }) {
     '%c📋 Innox 发票整理小助手',
     css + '; padding: 4px 8px; background: #dbeafe; border-radius: 4px'
   )
-  console.log(
-    `%c版本 %c${version}  %cGitHub %c${github}  %c微信 %c${wechat}`,
-    'color: #6b7280',
-    'color: #111827; font-weight: 600',
-    'color: #6b7280',
-    'color: #2563eb',
-    'color: #6b7280',
-    'color: #111827; font-weight: 600'
-  )
+  const fields = [`版本 ${version}`]
+  if (github) fields.push(`GitHub ${github}`)
+  if (wechat) fields.push(`微信 ${wechat}`)
+  console.log(`%c${fields.join('  ')}`, 'color: #6b7280')
   console.log('%c所有数据仅在浏览器本地处理，API Key 不会被上传到本应用任何后端', 'color: #9ca3af; font-style: italic')
 }

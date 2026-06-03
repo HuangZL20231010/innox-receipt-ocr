@@ -25,7 +25,7 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
     }
   }
 
-  function isMismatch(it) {
+function isMismatch(it) {
     const calc = Number(it.qty) * Number(it.unitPrice)
     return (
       Math.abs(calc - Number(it.subtotal)) > 0.01 &&
@@ -34,13 +34,40 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
     )
   }
 
+  function getAmountCheck(it) {
+    const invoiceTotal = Number(it.invoiceTotal) || 0
+    if (invoiceTotal > 0 && Math.abs(Number(it.subtotal) - invoiceTotal) > 0.01) {
+      return {
+        cls: 'text-red-600',
+        text: `与发票最终金额 ${symbolOf(it.currency || 'CNY')}${invoiceTotal.toFixed(2)} 不一致`,
+      }
+    }
+
+    const status = it.amountValidation?.status
+    if (status === 'conflict') {
+      const message = it.amountValidation.message || ''
+      const detail = message && !message.startsWith('未通过金额校验') ? `：${message}` : ''
+      return { cls: 'text-red-600', text: message.startsWith('未通过金额校验') ? message : `未通过金额校验，查阅问题${detail}` }
+    }
+    if (status === 'corrected') {
+      return { cls: 'text-blue-600', text: '已按最终金额修正' }
+    }
+    if (status === 'passed') {
+      return { cls: 'text-green-600', text: '通过金额校验' }
+    }
+    if (status === 'unverified') {
+      return { cls: 'text-amber-600', text: '未通过金额校验，查阅问题' }
+    }
+    return null
+  }
+
   return (
     <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-medium text-gray-800">
           <span className="mr-2">📊</span>
           采购明细
-          <span className="ml-2 text-sm font-normal text-gray-500">（识别后可手动修改）</span>
+          <span className="ml-2 text-sm font-normal text-gray-500">（每张发票一条，可手动修改）</span>
         </h2>
         <button
           onClick={onAdd}
@@ -55,19 +82,20 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
           <thead>
             <tr className="bg-gray-50 text-gray-700">
               <th className="px-2 py-2 border border-gray-200 w-12">序号</th>
-              <th className="px-2 py-2 border border-gray-200">货物/服务名称</th>
-              <th className="px-2 py-2 border border-gray-200">型号参数</th>
-              <th className="px-2 py-2 border border-gray-200 w-12">数量</th>
+              <th className="px-2 py-2 border border-gray-200">货物名称</th>
+              <th className="px-2 py-2 border border-gray-200">规格型号</th>
+              <th className="px-2 py-2 border border-gray-200 w-20 whitespace-nowrap">送达数量</th>
               <th className="px-2 py-2 border border-gray-200 w-28">单价</th>
               <th className="px-2 py-2 border border-gray-200 w-20">金额小计</th>
               <th className="px-2 py-2 border border-gray-200 min-w-[180px]">其他</th>
+              <th className="px-2 py-2 border border-gray-200 w-16">发票</th>
               <th className="px-2 py-2 border border-gray-200 w-10"></th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-gray-400 border border-gray-200">
+                <td colSpan={9} className="text-center py-8 text-gray-400 border border-gray-200">
                   暂无明细，请上传 PDF 发票或点击"新增一行"
                 </td>
               </tr>
@@ -77,9 +105,10 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
               const foreign = isForeign(it.currency)
               const sym = symbolOf(it.currency || 'CNY')
               const cnySubtotal = Number(it.subtotal) * (Number(it.exchangeRate) || 1)
+              const amountCheck = getAmountCheck(it)
 
               return (
-                <tr key={it.id} className={warn ? 'bg-yellow-50' : ''}>
+                <tr id={`item-${it.id}`} key={it.id} className={`${warn ? 'bg-yellow-50' : ''} scroll-mt-4`}>
                   <td className="border border-gray-200 px-2 text-center text-gray-500 align-top pt-2">
                     {idx + 1}
                   </td>
@@ -104,7 +133,7 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
                       min="0"
                       value={it.qty}
                       onChange={(e) => setField(it.id, 'qty', e.target.value)}
-                      className="w-10 px-1 py-1.5 outline-none focus:bg-primary-50 text-right"
+                      className="w-14 px-1 py-1.5 outline-none focus:bg-primary-50 text-right"
                     />
                   </td>
 
@@ -152,6 +181,11 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
                         ≈ ¥{cnySubtotal.toFixed(2)}
                       </div>
                     )}
+                    {amountCheck && (
+                      <div className={`px-1.5 pb-1 text-[11px] text-right ${amountCheck.cls}`}>
+                        {amountCheck.text}
+                      </div>
+                    )}
                   </td>
 
                   {/* 其他 */}
@@ -188,6 +222,21 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
                     )}
                   </td>
 
+                  <td className="border border-gray-200 text-center align-top pt-1.5">
+                    {it.sourcePdfUrl ? (
+                      <a
+                        href={it.sourcePdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-2 py-1 text-xs text-primary-600 hover:bg-primary-50 rounded"
+                        title={`打开来源发票：${it.sourcePdfName || '发票'}`}
+                      >
+                        发票
+                      </a>
+                    ) : (
+                      <span className="inline-block px-2 py-1 text-xs text-gray-300">-</span>
+                    )}
+                  </td>
                   <td className="border border-gray-200 text-center align-top pt-2">
                     <button
                       onClick={() => onDelete(it.id)}
@@ -210,7 +259,7 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
                 <td className="border border-gray-200 px-3 py-2 text-right text-primary-700">
                   RMB {totalCNY.toFixed(2)}
                 </td>
-                <td colSpan={2} className="border border-gray-200"></td>
+                <td colSpan={3} className="border border-gray-200"></td>
               </tr>
             </tfoot>
           )}

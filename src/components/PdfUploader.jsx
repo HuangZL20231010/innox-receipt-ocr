@@ -28,7 +28,7 @@ export default function PdfUploader({ pdfFiles, onAdd, onDelete, onRetry }) {
       <h2 className="font-medium text-gray-800 mb-3">
         <span className="mr-2">📄</span>
         1. 上传发票 PDF
-        <span className="ml-2 text-sm font-normal text-gray-500">（自动识别项目和金额）</span>
+        <span className="ml-2 text-sm font-normal text-gray-500">（每张发票汇总为一条明细）</span>
       </h2>
 
       <div
@@ -69,15 +69,47 @@ export default function PdfUploader({ pdfFiles, onAdd, onDelete, onRetry }) {
               >
                 <span className="text-2xl">📄</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 truncate">{f.name}</p>
+                  {f.url ? (
+                    <a
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm text-primary-700 hover:text-primary-800 hover:underline truncate"
+                      title={`打开发票：${f.name}`}
+                    >
+                      {f.name}
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-800 truncate">{f.name}</p>
+                  )}
                   {f.status === 'done' && (
-                    <p className="text-xs text-gray-500">识别出 {f.itemCount ?? 0} 个项目</p>
+                    <p className="text-xs text-gray-500">生成 {f.itemCount ?? 0} 条明细</p>
                   )}
                   {f.status === 'error' && (
                     <p className="text-xs text-red-500">{f.error}</p>
                   )}
                 </div>
                 <span className={`px-2 py-0.5 text-xs rounded ${s.cls}`}>{s.text}</span>
+                {f.url && (
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 text-xs text-primary-600 hover:bg-primary-50 rounded"
+                    title="在新标签页查看这张发票"
+                  >
+                    查看发票
+                  </a>
+                )}
+                {f.detailHref && (
+                  <a
+                    href={f.detailHref}
+                    className="px-2 py-1 text-xs text-primary-600 hover:bg-primary-50 rounded"
+                    title="跳转到这张发票生成的采购明细"
+                  >
+                    查看明细
+                  </a>
+                )}
                 {f.status === 'error' && (
                   <button
                     onClick={() => onRetry(f.id)}

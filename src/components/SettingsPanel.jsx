@@ -10,6 +10,7 @@ export default function SettingsPanel({ settings, onChange }) {
   }
 
   async function copyWechat() {
+    if (!WECHAT_ID) return
     try {
       await navigator.clipboard.writeText(WECHAT_ID)
       setShowWechatModal(true)
@@ -57,15 +58,19 @@ export default function SettingsPanel({ settings, onChange }) {
               >
                 点这里申请 →
               </a>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={copyWechat}
-                className="text-primary-600 hover:underline"
-                title={`微信号 ${WECHAT_ID}`}
-              >
-                向开发者申请体验（点击复制微信）
-              </button>
+              {WECHAT_ID && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={copyWechat}
+                    className="text-primary-600 hover:underline"
+                    title={`微信号 ${WECHAT_ID}`}
+                  >
+                    向开发者申请体验（点击复制微信）
+                  </button>
+                </>
+              )}
             </div>
           </label>
 
@@ -92,7 +97,7 @@ export default function SettingsPanel({ settings, onChange }) {
         </div>
       )}
 
-      {showWechatModal && (
+      {WECHAT_ID && showWechatModal && (
         <div
           onClick={() => setShowWechatModal(false)}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
