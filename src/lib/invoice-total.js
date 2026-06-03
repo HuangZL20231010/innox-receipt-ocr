@@ -75,6 +75,13 @@ const STRONG_TOTAL_PATTERNS = [
       /(?:grand total|total amount|amount due|total due|paid amount|(?<!tax\s)(?<!discount\s)(?<!shipping\s)\btotal\b(?!\s*(?:tax|discount|qty|quantity|items?|shipping|subtotal)))[^0-9$€£¥￥]{0,50}/i,
     preferLast: false,
   },
+  {
+    // 容错：部分 PDF 提取时会丢字，"应付金额"→"应付额"、"合计"→"计"。
+    // 用更短的"应付/实付/应收/付款"锚定，覆盖账单类（新加坡 GST / SaaS）最终金额。
+    name: '应付',
+    pattern: /(?:应付|实付|应收|付款)[^0-9¥￥$€£]{0,40}/i,
+    preferLast: true,
+  },
 ]
 
 function roundMoney(value) {

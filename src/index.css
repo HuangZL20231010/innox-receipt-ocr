@@ -25,3 +25,17 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+@keyframes rowHighlight {
+  0%,
+  35% {
+    background-color: #93c5fd;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+tr:target td {
+  animation: rowHighlight 1.8s ease-out;
+}
