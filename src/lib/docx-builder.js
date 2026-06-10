@@ -20,17 +20,15 @@ import { formatMoney } from './currency.js'
 import { assertSafeItemsForDocx } from './receipt-validation.js'
 
 const FONT = 'PingFang SC'
-const TITLE = '采购验收单（货物类）'
+const TABLE_FONT = '仿宋'
+const TITLE = '深圳科创学院采购验收单（团队自采）'
 
-const COL_WIDTHS = [562, 1843, 1701, 992, 1134, 1418, 1701]
+const COL_WIDTHS = [853, 1758, 1200, 1200, 1074, 1311, 1123]
 const FIRST_TWO = COL_WIDTHS[0] + COL_WIDTHS[1]
-const FIRST_FOUR = COL_WIDTHS.slice(0, 4).reduce((a, b) => a + b, 0)
-const LAST_THREE = COL_WIDTHS.slice(4).reduce((a, b) => a + b, 0)
 const LAST_FIVE = COL_WIDTHS.slice(2).reduce((a, b) => a + b, 0)
 const FULL_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 const SINGLE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: '000000' }
-const NIL_BORDER = { style: BorderStyle.NIL, size: 0, color: 'FFFFFF' }
 const TABLE_BORDERS = {
   top: SINGLE_BORDER,
   bottom: SINGLE_BORDER,
@@ -50,14 +48,14 @@ const NO_BORDERS = {
   insideVertical: NO_BORDER,
 }
 
-function textRun(text, { bold = false, size = 28 } = {}) {
-  return new TextRun({ text: String(text ?? ''), font: FONT, bold, size })
+function textRun(text, { bold = false, size = 28, font = FONT } = {}) {
+  return new TextRun({ text: String(text ?? ''), font, bold, size })
 }
 
-function paragraph(text, { bold = false, size = 28, alignment = AlignmentType.LEFT } = {}) {
+function paragraph(text, { bold = false, size = 28, alignment = AlignmentType.LEFT, font = FONT } = {}) {
   return new Paragraph({
     alignment,
-    children: [textRun(text, { bold, size })],
+    children: [textRun(text, { bold, size, font })],
   })
 }
 
@@ -83,6 +81,7 @@ function textCell(
     alignment = AlignmentType.LEFT,
     verticalAlign = VerticalAlign.CENTER,
     borders,
+    font = TABLE_FONT,
   } = {}
 ) {
   const lines = Array.isArray(textOrLines) ? textOrLines : [textOrLines]
@@ -91,7 +90,7 @@ function textCell(
     columnSpan,
     verticalAlign,
     borders,
-    children: lines.map((line) => paragraph(line, { bold, size, alignment })),
+    children: lines.map((line) => paragraph(line, { bold, size, alignment, font })),
   })
 }
 
@@ -107,7 +106,7 @@ function row(children, height) {
 }
 
 function buildHeaderRow() {
-  const headers = ['序号', '货物名称', '规格型号', '送达数量', '单价', '金额小计', '其他']
+  const headers = ['序号', '货物/服务名称', '型号参数', '送达数量', '单价', '金额小计', '其他']
   return row(
     headers.map((text, i) =>
       textCell(text, {
@@ -266,52 +265,61 @@ function buildSectionTitleRow(text) {
   )
 }
 
-function buildAcceptanceQuestionRow(question, answer, height) {
+function buildAcceptanceCheckRow() {
   return row(
     [
-      textCell(question, {
-        width: FIRST_FOUR,
-        columnSpan: 4,
-      }),
-      textCell(answer, {
-        width: LAST_THREE,
-        columnSpan: 3,
+      textCell('验收内容', {
+        width: FIRST_TWO,
+        columnSpan: 2,
+        bold: true,
         alignment: AlignmentType.CENTER,
       }),
+      textCell('□合格 □不合格', {
+        width: LAST_FIVE,
+        columnSpan: 5,
+        alignment: AlignmentType.CENTER,
+        font: 'Apple Symbols',
+      }),
+    ],
+    728
+  )
+}
+
+function buildAcceptanceDateRow(date) {
+  return row(
+    [
+      textCell('验收时间', {
+        width: FIRST_TWO,
+        columnSpan: 2,
+        bold: true,
+        alignment: AlignmentType.CENTER,
+      }),
+      textCell(date ? (() => { const [y, m, d] = date.split('-'); return `${y}年${parseInt(m)}月${parseInt(d)}日` })() : '年  月  日', {
+        width: LAST_FIVE,
+        columnSpan: 5,
+        alignment: AlignmentType.CENTER,
+      }),
+    ],
+    928
+  )
+}
+
+function buildSignatureRow(label, height) {
+  return row(
+    [
+      textCell(label, {
+        width: FIRST_TWO,
+        columnSpan: 2,
+        bold: true,
+        alignment: AlignmentType.CENTER,
+      }),
+      emptyCell({ width: LAST_FIVE, columnSpan: 5 }),
     ],
     height
   )
 }
 
-function buildOpinionRows() {
-  return [
-    row(
-      [
-        textCell('学院验收意见：', {
-          width: FULL_WIDTH,
-          columnSpan: 7,
-          verticalAlign: VerticalAlign.BOTTOM,
-          borders: { bottom: NIL_BORDER },
-        }),
-      ],
-      454
-    ),
-    row(
-      [
-        textCell('年  月  日', {
-          width: FULL_WIDTH,
-          columnSpan: 7,
-          alignment: AlignmentType.RIGHT,
-          verticalAlign: VerticalAlign.BOTTOM,
-          borders: { top: NIL_BORDER },
-        }),
-      ],
-      2154
-    ),
-  ]
-}
-
-export async function buildDocx({ items, screenshots }) {
+export async function buildDocx({ items, screenshots, settings = {} }) {
   assertSafeItemsForDocx(items)
 
   const totalCNY = items.reduce(
@@ -319,35 +327,18 @@ export async function buildDocx({ items, screenshots }) {
     0
   )
 
+  const dateStr = settings.acceptanceDate || ''
+
   const rows = [
     buildHeaderRow(),
     ...items.map((item, idx) => buildItemRow(item, idx)),
     buildTotalRow(totalCNY),
     buildSectionTitleRow('验收照片'),
     await buildPhotoContentRow(screenshots),
-    buildSectionTitleRow('验收内容'),
-    buildAcceptanceQuestionRow(
-      '1.供应商是否在规定日期内送货；收货方验收货物外观包装完好；能正常使用；',
-      '是',
-      704
-    ),
-    buildAcceptanceQuestionRow(
-      '2.需要安装、培训或施工的货物是否已执行安装、培训或施工；',
-      '是',
-      397
-    ),
-    buildAcceptanceQuestionRow(
-      '3.货物发票内，填写的客户名称、合计金额、数量、品名和规格，经核对与本单位（或招标文件）要求是否一致；',
-      '是',
-      397
-    ),
-    buildAcceptanceQuestionRow(
-      '4.货物如涉及保修，其使用说明、保修卡及售后服务承诺是否明确；',
-      '是',
-      397
-    ),
-    buildAcceptanceQuestionRow('5.收到的货物是否需要执行特殊验收。', '否', 397),
-    ...buildOpinionRows(),
+    buildAcceptanceCheckRow(),
+    buildAcceptanceDateRow(dateStr),
+    buildSignatureRow(['团队经办人', '签字确认'], 885),
+    buildSignatureRow(['辅导老师', '签字确认'], 852),
   ]
 
   const table = new Table({
@@ -360,7 +351,7 @@ export async function buildDocx({ items, screenshots }) {
     styles: {
       default: {
         document: {
-          run: { font: FONT },
+          run: { font: TABLE_FONT },
         },
       },
     },
@@ -369,13 +360,13 @@ export async function buildDocx({ items, screenshots }) {
         properties: {
           page: {
             size: { width: 11906, height: 16838 },
-            margin: { top: 1440, right: 1797, bottom: 1440, left: 1797 },
+            margin: { top: 1440, right: 1800, bottom: 1440, left: 1800 },
           },
         },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [textRun(TITLE, { bold: true, size: 44 })],
+            children: [textRun(TITLE, { bold: true, size: 40, font: 'PingFang SC' })],
           }),
           new Paragraph({ children: [] }),
           table,
