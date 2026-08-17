@@ -5,6 +5,7 @@ import PdfUploader from './components/PdfUploader.jsx'
 import ImageUploader from './components/ImageUploader.jsx'
 import ItemsTable from './components/ItemsTable.jsx'
 import GenerateButton from './components/GenerateButton.jsx'
+import DonationWidget from './components/DonationWidget.jsx'
 import { parsePDF } from './lib/pdf.js'
 import { extractItems } from './lib/deepseek.js'
 import { compressImage } from './lib/compress.js'
@@ -248,6 +249,8 @@ export default function App() {
         />
         <GenerateButton items={items} screenshots={screenshots} settings={settings} />
       </main>
+
+      <DonationWidget />
 
       <footer className="border-t border-gray-200 bg-white mt-4">
         <div className="max-w-5xl mx-auto px-5 py-5 text-center text-xs text-gray-500 space-y-2">
