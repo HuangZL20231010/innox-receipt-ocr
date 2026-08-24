@@ -1,9 +1,10 @@
 # Innox 发票整理小助手
 
-一个纯前端网页工具，帮团队把"翻发票 → 抄表 → 填验收单"的流程压缩成两次上传 + 一次点击。
+一个以前端本地处理为主的网页工具，帮团队把"翻发票 → 抄表 → 填验收单"的流程压缩成两次上传 + 一次点击。
 
 - 上传 **发票 PDF** → AI 自动识别项目名 / 型号 / 数量 / 单价 / 小计
 - 上传 **购买截图** → 自动作为验收照片附在 Word 末尾
+- 外币发票 → 按中国人民银行人民币汇率中间价折算
 - 表格在线校对 → 一键导出采购验收单 Word 文件
 
 技术栈：React 18 + Vite 5 + Tailwind CSS。所有处理都在浏览器本地完成，API Key 仅存于 localStorage，不会上传到任何服务器。
@@ -51,7 +52,24 @@ npm run build      # 产物在 dist/
 npm run preview    # 本地预览生产构建
 ```
 
-`dist/` 是纯静态文件，可上传到任何静态托管平台：
+`dist/` 是前端静态文件。外币中间价功能还需启动项目内的 Node.js 接口：
+
+```bash
+npm run server
+```
+
+本地开发时分别运行 `npm run dev` 和 `npm run server`，Vite 会将 `/api` 代理到 `127.0.0.1:3001`。
+
+### 自有服务器部署
+
+1. 将 `dist/` 同步到 Nginx 站点目录。
+2. 将 `server/`、`package.json` 同步到 `/opt/receipt-ocr/`。
+3. 参考 `deploy/receipt-ocr-exchange.service` 启动 Node.js 接口。
+4. 参考 `deploy/nginx.conf` 将 `/api/` 代理到 `127.0.0.1:3001`。
+
+历史汇率会缓存到 `/var/lib/receipt-ocr/exchange-rates.json`。周末或节假日自动使用之前最近一个公布日的中间价。如未启动该接口，其他功能仍可使用，外币汇率需手工填写。
+
+前端仍可由常见静态服务提供：
 
 - **Nginx**：把 `dist/` 内容拷到 web 根目录
 - **Vercel / Netlify**：连接仓库直接部署，无需配置
@@ -68,7 +86,7 @@ receiptOCR/
 ├── package.json
 ├── vite.config.js
 ├── tailwind.config.js
-└── src/
+├── src/
     ├── main.jsx                React 挂载
     ├── App.jsx                 主页面 + 状态管理
     ├── index.css               Tailwind + 全局样式
@@ -87,6 +105,8 @@ receiptOCR/
     │   └── docx-builder.js     Word 文档生成
     └── prompts/
         └── extract.js          DeepSeek 提示词
+├── server/                     央行中间价 API 与本地缓存
+└── deploy/                     Nginx 与 systemd 配置示例
 ```
 
 ---
@@ -103,7 +123,7 @@ A：说明你的 PDF 是扫描件（图像 PDF），没有文字层。请用电�
 A：直接在采购明细表格里手动改即可，所有字段都可编辑。
 
 **Q：API Key 安全吗？会不会被发到你的服务器？**
-A：本工具是**纯前端**应用，没有任何后端服务器。API Key 只保存在你浏览器的 localStorage，只在调 DeepSeek 时直接发到 `api.deepseek.com`。代码完全开源，你可以随时检查 `src/lib/deepseek.js`。
+A：API Key 只保存在浏览器的 localStorage，只在调 DeepSeek 时直接发到 `api.deepseek.com`。自有服务器的汇率接口只接收币种和日期，不接收 API Key 或发票内容。
 
 **Q：生成的 Word 字体不对？**
 A：Word 模板用的是苹方字体（PingFang SC），如果你的 Windows 没有该字体，会自动回退到微软雅黑或宋体。视觉上略有差异，但表格结构完全一致。
@@ -112,7 +132,8 @@ A：Word 模板用的是苹方字体（PingFang SC），如果你的 Windows 没
 
 ## 隐私说明
 
-- 你的 DeepSeek API Key 仅保存在浏览器 localStorage，不会发到本应用的任何后端
+- 你的 DeepSeek API Key 仅保存在浏览器 localStorage，不会发到本应用的后端
+- 汇率接口只接收币种代码和发票日期
 - PDF 中提取的文字只发给 DeepSeek 做结构化抽取
 - 上传的截图**不会**发到任何外部服务（包括 DeepSeek），全程仅在浏览器本地处理后嵌入 Word
 - 所有产物（识别结果、Word 文件）都只存在于你的浏览器和下载目录中

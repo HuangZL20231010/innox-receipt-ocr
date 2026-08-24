@@ -1,0 +1,23 @@
+[Unit]
+Description=Receipt OCR exchange-rate API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/receipt-ocr
+ExecStart=/usr/bin/node /opt/receipt-ocr/server/index.js
+Environment=NODE_ENV=production
+Environment=EXCHANGE_API_HOST=127.0.0.1
+Environment=EXCHANGE_API_PORT=3001
+Environment=EXCHANGE_CACHE_PATH=/var/lib/receipt-ocr/exchange-rates.json
+StateDirectory=receipt-ocr
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

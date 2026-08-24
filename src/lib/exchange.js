@@ -1,6 +1,6 @@
 import { log } from './logger.js'
 
-const BASE = 'https://api.frankfurter.dev/v1'
+const BASE = '/api/exchange-rate'
 const cache = new Map() // key: `${currency}-${date}` → { rate, actualDate }
 
 export async function fetchRate(currency, date) {
@@ -14,10 +14,12 @@ export async function fetchRate(currency, date) {
     return cache.get(key)
   }
 
-  const path = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : 'latest'
-  const url = `${BASE}/${path}?base=${currency}&symbols=CNY`
+  const requestedDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : ''
+  const params = new URLSearchParams({ currency })
+  if (requestedDate) params.set('date', requestedDate)
+  const url = `${BASE}?${params}`
 
-  log.info(`💱 拉取汇率 ${currency} → CNY (${path})`)
+  log.info(`💱 拉取央行中间价 ${currency} → CNY (${requestedDate || 'latest'})`)
   const t0 = performance.now()
 
   let res
@@ -29,13 +31,13 @@ export async function fetchRate(currency, date) {
   }
 
   if (!res.ok) {
-    const txt = await res.text().catch(() => '')
-    log.error(`💱 HTTP ${res.status}`, txt)
-    throw new Error(`汇率获取失败 (${res.status})`)
+    const data = await res.json().catch(() => null)
+    log.error(`💱 HTTP ${res.status}`, data)
+    throw new Error(data?.error || `汇率获取失败 (${res.status})`)
   }
 
   const data = await res.json()
-  const rate = data?.rates?.CNY
+  const rate = data?.rate
   const actualDate = data?.date || date || ''
   if (!rate || isNaN(rate)) {
     log.error('💱 汇率字段缺失：', data)
@@ -46,7 +48,7 @@ export async function fetchRate(currency, date) {
     `💱 ${currency} → CNY = ${rate}（${actualDate}），耗时 ${(performance.now() - t0).toFixed(0)}ms`
   )
 
-  const result = { rate, actualDate }
+  const result = { rate, actualDate, source: data.source || '', sourceUrl: data.sourceUrl || '' }
   cache.set(key, result)
   return result
 }

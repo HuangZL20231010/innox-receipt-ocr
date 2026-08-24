@@ -12,4 +12,6 @@ innox-receipt-ocr-sanitized/
 .idea
 .~*
 .claude/
+server/data/exchange-rates.json
+server/data/*.tmp
 deploy.sh

@@ -20,6 +20,8 @@ export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrenc
     if (field === 'exchangeRate') {
       const item = items.find((x) => x.id === id)
       if (item && isForeign(item.currency)) {
+        onUpdate(id, 'exchangeRateSource', '')
+        onUpdate(id, 'exchangeRateSourceUrl', '')
         onUpdate(id, 'other', formatRateText(item.currency, value, item.invoiceDate))
       }
     }
@@ -218,6 +220,17 @@ function isMismatch(it) {
                             className="w-20 px-1 py-0.5 border border-gray-200 rounded text-xs text-right"
                           />
                         </label>
+                        {it.exchangeRateSourceUrl && (
+                          <a
+                            href={it.exchangeRateSourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:underline whitespace-nowrap"
+                            title={it.exchangeRateSource || '汇率来源'}
+                          >
+                            查看来源
+                          </a>
+                        )}
                       </div>
                     )}
                   </td>

@@ -20,12 +20,13 @@ export function formatMoney(amount, code) {
   return `${symbolOf(code || 'CNY')}${n.toFixed(2)}`
 }
 
-export function formatRateText(currency, rate, date) {
+export function formatRateText(currency, rate, date, source = '') {
   if (!currency || currency === 'CNY') return ''
   const r = Number(rate)
   if (!r || isNaN(r)) return ''
   const dateStr = date ? ` (${date})` : ''
-  return `汇率: 1 ${currency} = ${r.toFixed(4)} CNY${dateStr}`
+  const prefix = source ? `按${source}折算：` : '汇率: '
+  return `${prefix}1 ${currency} = ${r.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')} CNY${dateStr}`
 }
 
 export function isForeign(code) {

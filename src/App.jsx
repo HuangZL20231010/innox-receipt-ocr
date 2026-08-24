@@ -5,6 +5,7 @@ import PdfUploader from './components/PdfUploader.jsx'
 import ImageUploader from './components/ImageUploader.jsx'
 import ItemsTable from './components/ItemsTable.jsx'
 import GenerateButton from './components/GenerateButton.jsx'
+import DonationWidget from './components/DonationWidget.jsx'
 import { parsePDF } from './lib/pdf.js'
 import { extractItems } from './lib/deepseek.js'
 import { compressImage } from './lib/compress.js'
@@ -84,7 +85,7 @@ export default function App() {
 
   async function autoFetchRate(itemId, currency, date) {
     try {
-      const { rate, actualDate } = await fetchRate(currency, date)
+      const { rate, actualDate, source, sourceUrl } = await fetchRate(currency, date)
       setItems((prev) =>
         prev.map((it) =>
           it.id === itemId
@@ -92,7 +93,9 @@ export default function App() {
                 ...it,
                 exchangeRate: rate,
                 invoiceDate: it.invoiceDate || actualDate,
-                other: formatRateText(currency, rate, actualDate),
+                exchangeRateSource: source,
+                exchangeRateSourceUrl: sourceUrl,
+                other: formatRateText(currency, rate, actualDate, source),
               }
             : it
         )
@@ -113,9 +116,23 @@ export default function App() {
       prev.map((it) => {
         if (it.id !== itemId) return it
         if (newCurrency === 'CNY') {
-          return { ...it, currency: 'CNY', exchangeRate: 1, other: '' }
+          return {
+            ...it,
+            currency: 'CNY',
+            exchangeRate: 1,
+            exchangeRateSource: '',
+            exchangeRateSourceUrl: '',
+            other: '',
+          }
         }
-        return { ...it, currency: newCurrency, exchangeRate: 1, other: '正在获取汇率…' }
+        return {
+          ...it,
+          currency: newCurrency,
+          exchangeRate: 1,
+          exchangeRateSource: '',
+          exchangeRateSourceUrl: '',
+          other: '正在获取汇率…',
+        }
       })
     )
     if (newCurrency !== 'CNY') {
@@ -249,6 +266,8 @@ export default function App() {
         <GenerateButton items={items} screenshots={screenshots} settings={settings} />
       </main>
 
+      <DonationWidget />
+
       <footer className="border-t border-gray-200 bg-white mt-4">
         <div className="max-w-5xl mx-auto px-5 py-5 text-center text-xs text-gray-500 space-y-2">
           <div className="flex items-center justify-center gap-3 flex-wrap">
@@ -273,7 +292,7 @@ export default function App() {
               </span>
             )}
           </div>
-          <p className="text-gray-400">所有数据仅存于浏览器本地，API Key 不会上传到任何服务器</p>
+          <p className="text-gray-400">汇率查询仅发送币种和日期，API Key 不会上传到本服务</p>
         </div>
       </footer>
     </div>
