@@ -1,7 +1,7 @@
 export function getUnsafeInvoiceItemIndex(items) {
   return items.findIndex((item) => {
     if (!item.sourceId) return false
-    if (!['passed', 'corrected'].includes(item.amountValidation?.status)) return true
+    if (!['passed', 'corrected', 'manual-confirmed'].includes(item.amountValidation?.status)) return true
     if (Number(item.invoiceTotal) > 0) {
       return Math.abs(Number(item.subtotal) - Number(item.invoiceTotal)) > 0.01
     }

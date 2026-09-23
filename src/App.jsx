@@ -123,6 +123,14 @@ export default function App() {
             exchangeRateSource: '',
             exchangeRateSourceUrl: '',
             other: '',
+            amountValidation:
+              it.amountValidation?.status === 'manual-confirmed'
+                ? {
+                    ...it.amountValidation,
+                    status: it.amountValidation.previousStatus || 'unverified',
+                    message: '币种已修改，请重新核对发票金额',
+                  }
+                : it.amountValidation,
           }
         }
         return {
@@ -132,6 +140,14 @@ export default function App() {
           exchangeRateSource: '',
           exchangeRateSourceUrl: '',
           other: '正在获取汇率…',
+          amountValidation:
+            it.amountValidation?.status === 'manual-confirmed'
+              ? {
+                  ...it.amountValidation,
+                  status: it.amountValidation.previousStatus || 'unverified',
+                  message: '币种已修改，请重新核对发票金额',
+                }
+              : it.amountValidation,
         }
       })
     )
@@ -201,7 +217,40 @@ export default function App() {
   }
 
   function updateItem(id, field, value) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)))
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it
+        const updated = { ...it, [field]: value }
+        if (field === 'subtotal' && it.amountValidation?.status === 'manual-confirmed') {
+          updated.amountValidation = {
+            ...it.amountValidation,
+            status: it.amountValidation.previousStatus || 'unverified',
+            message: '金额已修改，请重新核对原发票',
+          }
+        }
+        return updated
+      })
+    )
+  }
+
+  function confirmInvoiceAmount(id) {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it
+        const subtotal = Number(it.subtotal) || 0
+        if (subtotal <= 0) return it
+        return {
+          ...it,
+          invoiceTotal: subtotal,
+          amountValidation: {
+            ...it.amountValidation,
+            previousStatus: it.amountValidation?.status || 'unverified',
+            status: 'manual-confirmed',
+            message: '已人工核对发票最终金额',
+          },
+        }
+      })
+    )
   }
 
   function deleteItem(id) {
@@ -262,6 +311,7 @@ export default function App() {
           onAdd={addEmptyItem}
           onCurrencyChange={handleCurrencyChange}
           onDateChange={handleInvoiceDateChange}
+          onConfirmAmount={confirmInvoiceAmount}
         />
         <GenerateButton items={items} screenshots={screenshots} settings={settings} />
       </main>
@@ -293,6 +343,16 @@ export default function App() {
             )}
           </div>
           <p className="text-gray-400">汇率查询仅发送币种和日期，API Key 不会上传到本服务</p>
+          <p>
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-primary-600"
+            >
+              京ICP备2025122703号-3
+            </a>
+          </p>
         </div>
       </footer>
     </div>

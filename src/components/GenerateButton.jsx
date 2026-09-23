@@ -19,7 +19,7 @@ export default function GenerateButton({ items, screenshots, settings }) {
     }
     const badValidationIndex = getUnsafeInvoiceItemIndex(items)
     if (badValidationIndex >= 0) {
-      return `第 ${badValidationIndex + 1} 行未通过金额校验，查阅问题`
+      return `第 ${badValidationIndex + 1} 行未通过金额校验，请打开原发票核对后点击“确认金额”`
     }
     return ''
   }

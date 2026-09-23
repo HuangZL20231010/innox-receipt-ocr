@@ -3,7 +3,15 @@ import { symbolOf, isForeign, formatRateText } from '../lib/currency.js'
 
 const NUMERIC_FIELDS = new Set(['qty', 'unitPrice', 'subtotal', 'exchangeRate'])
 
-export default function ItemsTable({ items, onUpdate, onDelete, onAdd, onCurrencyChange, onDateChange }) {
+export default function ItemsTable({
+  items,
+  onUpdate,
+  onDelete,
+  onAdd,
+  onCurrencyChange,
+  onDateChange,
+  onConfirmAmount,
+}) {
   const totalCNY = items.reduce(
     (sum, it) => sum + (Number(it.subtotal) || 0) * (Number(it.exchangeRate) || 1),
     0
@@ -57,8 +65,14 @@ function isMismatch(it) {
     if (status === 'passed') {
       return { cls: 'text-green-600', text: '通过金额校验' }
     }
+    if (status === 'manual-confirmed') {
+      return { cls: 'text-green-600', text: '已人工核对金额' }
+    }
     if (status === 'unverified') {
-      return { cls: 'text-amber-600', text: '未通过金额校验，查阅问题' }
+      return {
+        cls: 'text-amber-600',
+        text: it.amountValidation?.message || '未在发票正文中识别到最终金额',
+      }
     }
     return null
   }
@@ -188,6 +202,21 @@ function isMismatch(it) {
                         {amountCheck.text}
                       </div>
                     )}
+                    {it.sourceId &&
+                      !['passed', 'corrected', 'manual-confirmed'].includes(
+                        it.amountValidation?.status
+                      ) && (
+                        <div className="px-1.5 pb-1.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => onConfirmAmount(it.id)}
+                            className="inline-flex items-center justify-center rounded border border-primary-400 bg-white px-1.5 py-0.5 text-[10px] text-primary-600 transition-colors hover:border-primary-500 hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-300"
+                            title="请先打开原发票，确认当前小计就是发票最终金额"
+                          >
+                            已核对，确认金额
+                          </button>
+                        </div>
+                      )}
                   </td>
 
                   {/* 其他 */}

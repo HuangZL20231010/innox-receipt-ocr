@@ -27,6 +27,11 @@ assert.equal(
   -1
 )
 
+assert.equal(
+  getUnsafeInvoiceItemIndex([{ ...baseItem, amountValidation: { status: 'manual-confirmed' } }]),
+  -1
+)
+
 for (const status of ['conflict', 'unverified', undefined]) {
   const item = status
     ? { ...baseItem, amountValidation: { status } }
